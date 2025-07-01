@@ -1,0 +1,161 @@
+{% extends 'presence/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0"><i class="fas fa-tachometer-alt me-2"></i>Tableau de bord Manager</h2>
+                <span class="badge bg-light text-dark">Équipe: {{ request.user.employee.department|default:'Non spécifié' }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>{{ absence_count_today }}</strong> absence{{ absence_count_today|pluralize }} non justifiée{{ absence_count_today|pluralize }} aujourd'hui
+            </div>
+            
+            <h4 class="mb-3"><i class="fas fa-users me-2"></i>Statut de l'équipe</h4>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Membre</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in team_status %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-2">
+                                        <span class="avatar-initial rounded-circle bg-primary text-white">
+                                            {{ item.emp.name|first|upper }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ item.emp.name }}</h6>
+                                        <small class="text-muted">{{ item.emp.position|default:'Non spécifié' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.status == 'inactive' %}
+                                    <span class="badge bg-danger">Inactif</span>
+                                {% elif item.status == 'present' %}
+                                    <span class="badge bg-success">Présent</span>
+                                {% elif item.status == 'pause' %}
+                                    <span class="badge bg-warning text-dark">En pause</span>
+                                {% elif item.status == 'meeting' %}
+                                    <span class="badge bg-info">En réunion</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ item.status|capfirst }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'presence:send_message' item.emp.user.id %}" 
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Envoyer un message">
+                                    <i class="fas fa-paper-plane me-1"></i> Message
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Aucun membre dans votre équipe pour le moment.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <h4 class="mb-3"><i class="fas fa-calendar-times me-2"></i>Absences aujourd'hui</h4>
+            {% if absences %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Employé</th>
+                                <th>Période</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for absence in absences %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar me-2">
+                                            <span class="avatar-initial rounded-circle bg-secondary text-white">
+                                                {{ absence.employee.name|first|upper }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ absence.employee.name }}</h6>
+                                            <small class="text-muted">{{ absence.employee.position|default:'' }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ absence.start_time|time:"H:i" }} - {{ absence.end_time|time:"H:i" }}
+                                </td>
+                                <td>
+                                    {% if absence.justified %}
+                                        <span class="badge bg-success">Justifiée</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">À justifier</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not absence.justified %}
+                                    <form method="post" action="{% url 'justify_absence' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="absence_id" value="{{ absence.id }}">
+                                        <button type="submit" class="btn btn-sm btn-success" 
+                                                title="Marquer comme justifiée">
+                                            <i class="fas fa-check me-1"></i> Justifier
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Aucune absence à afficher pour aujourd'hui.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+.avatar-initial {
+    font-size: 0.875rem;
+}
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

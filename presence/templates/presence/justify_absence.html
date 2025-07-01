@@ -1,0 +1,115 @@
+{% extends 'presence/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Justifier une absence</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if absences %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Période</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for absence in absences %}
+                                    <tr>
+                                        <td>{{ absence.date|date:"d/m/Y" }}</td>
+                                        <td>{{ absence.start_time|time:"H:i" }} - {{ absence.end_time|time:"H:i" }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if absence.justified %}success{% else %}warning{% endif %}">
+                                                {{ absence.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if not absence.justified %}
+                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#justifyModal{{ absence.id }}">
+                                                <i class="fas fa-edit me-1"></i> Justifier
+                                            </button>
+                                            {% endif %}
+                                            <a href="{% url 'presence:export_absence_pdf' absence.id %}" 
+                                               class="btn btn-sm btn-outline-secondary"
+                                               title="Exporter en PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Modal de justification -->
+                                    <div class="modal fade" id="justifyModal{{ absence.id }}" tabindex="-1" 
+                                         aria-labelledby="justifyModalLabel{{ absence.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="justifyModalLabel{{ absence.id }}">
+                                                        Justifier l'absence du {{ absence.date|date:"d/m/Y" }}
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form method="post" action="{% url 'presence:justify_absence' %}" enctype="multipart/form-data">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="absence_id" value="{{ absence.id }}">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="justification{{ absence.id }}" class="form-label">
+                                                                Motif de la justification :
+                                                            </label>
+                                                            <textarea class="form-control" id="justification{{ absence.id }}" 
+                                                                      name="justification" rows="4" required></textarea>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="pdf_file{{ absence.id }}" class="form-label">
+                                                                Fichier PDF (facultatif) :
+                                                            </label>
+                                                            <input type="file" class="form-control" id="pdf_file{{ absence.id }}" 
+                                                                   name="pdf_file" accept="application/pdf">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                            Annuler
+                                                        </button>
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="fas fa-check me-1"></i> Valider la justification
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Vous n'avez aucune absence à justifier pour le moment.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

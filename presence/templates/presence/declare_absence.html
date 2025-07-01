@@ -1,0 +1,54 @@
+{% extends 'presence/base.html' %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="container mt-4">
+    {% if user.is_authenticated and user.employee.role == 'employe' %}
+    <div class="mb-3">
+        <button type="button" class="btn btn-primary">
+            <i class="fas fa-calendar-plus me-2"></i>Déclarer une absence
+        </button>
+    </div>
+    {% endif %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Déclarer une absence</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'presence:declare_absence' %}" class="mt-3">
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ form.date.label_tag }} 
+                    {{ form.date|add_class:"form-control" }}
+                </div>
+                <div class="mb-3">
+                    {{ form.start_time.label_tag }} 
+                    {{ form.start_time|add_class:"form-control" }}
+                </div>
+                <div class="mb-3">
+                    {{ form.end_time.label_tag }} 
+                    {{ form.end_time|add_class:"form-control" }}
+                </div>
+                <div class="mb-3">
+                    {{ form.reason.label_tag }} 
+                    {{ form.reason|add_class:"form-control" }}
+                </div>
+                <button type="submit" class="btn btn-primary">Envoyer</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

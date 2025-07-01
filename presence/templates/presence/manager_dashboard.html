@@ -1,0 +1,188 @@
+{% extends 'presence/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tachometer-alt me-2"></i>Tableau de bord Manager</h2>
+                <span class="badge bg-primary">{{ request.user.employee.department }}</span>
+            </div>
+
+            <!-- Notifications -->
+            {% if notifications %}
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications récentes</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for notif in notifications %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ notif.title }}</h6>
+                            <small>{{ notif.created_at|timesince }} ago</small>
+                        </div>
+                        <p class="mb-1">{{ notif.message }}</p>
+                        <a href="{{ notif.link }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i> Voir les détails
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Liste des justificatifs d'absence -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Justificatifs d'absence</h5>
+                        <span class="badge bg-light text-dark">{{ absences|length }} justificatif{{ absences|pluralize }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if absences %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Employé</th>
+                                    <th>Date</th>
+                                    <th>Période</th>
+                                    <th>Déposé le</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for absence in absences %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar me-2">
+                                                <span class="avatar-initial rounded-circle bg-primary text-white">
+                                                    {{ absence.employee.user.first_name|first|upper }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ absence.employee.user.get_full_name }}</h6>
+                                                <small class="text-muted">{{ absence.employee.position }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ absence.date|date:"d/m/Y" }}</td>
+                                    <td>{{ absence.start_time|time:"H:i" }} - {{ absence.end_time|time:"H:i" }}</td>
+                                    <td>
+                                        <span title="{{ absence.updated_at|date:'d/m/Y H:i' }}">
+                                            {{ absence.updated_at|timesince }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if absence.justification_file %}
+                                        <a href="{{ absence.justification_file.url }}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           target="_blank"
+                                           title="Voir le justificatif">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </a>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">Aucun fichier</span>
+                                        {% endif %}
+                                        
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-secondary ms-1"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#detailsModal{{ absence.id }}"
+                                                title="Détails">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Modal Détails -->
+                                <div class="modal fade" id="detailsModal{{ absence.id }}" tabindex="-1" 
+                                     aria-labelledby="detailsModalLabel{{ absence.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="detailsModalLabel{{ absence.id }}">
+                                                    Détails de l'absence
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <h6>Employé</h6>
+                                                    <p>{{ absence.employee.user.get_full_name }}</p>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <h6>Date</h6>
+                                                        <p>{{ absence.date|date:"l d F Y"|capfirst }}</p>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <h6>Période</h6>
+                                                        <p>{{ absence.start_time|time:"H:i" }} - {{ absence.end_time|time:"H:i" }}</p>
+                                                    </div>
+                                                </div>
+                                                {% if absence.justification %}
+                                                <div class="mb-3">
+                                                    <h6>Commentaire</h6>
+                                                    <p class="text-muted">{{ absence.justification|linebreaksbr }}</p>
+                                                </div>
+                                                {% endif %}
+                                                {% if absence.justification_file %}
+                                                <div class="mb-3">
+                                                    <h6>Justificatif</h6>
+                                                    <a href="{{ absence.justification_file.url }}" 
+                                                       class="btn btn-sm btn-primary" 
+                                                       target="_blank">
+                                                        <i class="fas fa-download me-1"></i> Télécharger le PDF
+                                                    </a>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                                <a href="mailto:{{ absence.employee.user.email }}" class="btn btn-primary">
+                                                    <i class="fas fa-envelope me-1"></i> Contacter
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        <div class="mb-3">
+                            <i class="fas fa-inbox fa-4x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted">Aucun justificatif d'absence</h5>
+                        <p class="text-muted">Les justificatifs soumis par votre équipe apparaîtront ici.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    font-weight: 600;
+}
+.avatar-initial {
+    font-size: 1rem;
+    line-height: 1;
+}
+</style>
+{% endblock %}

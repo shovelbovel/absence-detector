@@ -1,0 +1,197 @@
+{% extends 'presence/base.html' %}
+{% load tz %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">
+                <i class="fas fa-inbox me-2"></i>Boîte de réception
+            </h2>
+            <a href="#" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+                <i class="fas fa-paper-plane me-1"></i> Nouveau message
+            </a>
+        </div>
+        
+        <div class="card-body p-0">
+            <!-- Onglets pour basculer entre reçus et envoyés -->
+            <ul class="nav nav-tabs" id="inboxTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab">
+                        Reçus ({{ received_messages|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab">
+                        Envoyés ({{ sent_messages|length }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content p-3" id="inboxTabsContent">
+                <!-- Messages reçus -->
+                <div class="tab-pane fade show active" id="received" role="tabpanel">
+                    {% if received_messages %}
+                        <div class="list-group list-group-flush">
+                            {% for message in received_messages %}
+                            <a href="#" class="list-group-item list-group-item-action border-0 {% if not message.read %}bg-light{% endif %}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar me-3">
+                                            <span class="avatar-initial rounded-circle bg-primary text-white">
+                                                {{ message.sender.first_name|first|upper }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">
+                                                {{ message.sender.get_full_name|default:message.sender.username }}
+                                                <small class="text-muted ms-2">{{ message.sent_at|timesince }}</small>
+                                            </h6>
+                                            <p class="mb-0 text-muted">
+                                                <strong>{{ message.subject|default:"(Sans objet)" }}</strong> - 
+                                                {{ message.body|truncatewords:20|default:"(Aucun contenu)" }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge {% if not message.read %}bg-primary{% else %}bg-light text-muted{% endif %}">
+                                            {% if not message.read %}Nouveau{% else %}Lu{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center p-5">
+                            <div class="mb-3">
+                                <i class="fas fa-inbox fa-4x text-muted"></i>
+                            </div>
+                            <p class="text-muted">Aucun message reçu</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Messages envoyés -->
+                <div class="tab-pane fade" id="sent" role="tabpanel">
+                    {% if sent_messages %}
+                        <div class="list-group list-group-flush">
+                            {% for message in sent_messages %}
+                            <div class="list-group-item border-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar me-3">
+                                            <span class="avatar-initial rounded-circle bg-secondary text-white">
+                                                {{ message.recipient.first_name|first|upper }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">
+                                                À : {{ message.recipient.get_full_name|default:message.recipient.username }}
+                                                <small class="text-muted ms-2">{{ message.sent_at|timesince }}</small>
+                                            </h6>
+                                            <p class="mb-0 text-muted">
+                                                <strong>{{ message.subject|default:"(Sans objet)" }}</strong> - 
+                                                {{ message.body|truncatewords:20|default:"(Aucun contenu)" }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center p-5">
+                            <div class="mb-3">
+                                <i class="fas fa-paper-plane fa-4x text-muted"></i>
+                            </div>
+                            <p class="text-muted">Aucun message envoyé</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouveau Message -->
+<div class="modal fade" id="newMessageModal" tabindex="-1" aria-labelledby="newMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newMessageModalLabel">Nouveau message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id="messageForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="recipient" class="form-label">Destinataire</label>
+                        <select class="form-select" id="recipient" name="recipient_id" required>
+                            <option value="" selected disabled>Sélectionnez un destinataire</option>
+                            {% for user in request.user.colleagues.all %}
+                                <option value="{{ user.id }}">
+                                    {{ user.get_full_name|default:user.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Objet</label>
+                        <input type="text" class="form-control" id="subject" name="subject">
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" name="body" rows="5" required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Envoyer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+.avatar-initial {
+    font-size: 1rem;
+}
+.list-group-item:hover {
+    background-color: #f8f9fa !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageForm = document.getElementById('messageForm');
+    const recipientSelect = document.getElementById('recipient');
+    
+    if (messageForm && recipientSelect) {
+        messageForm.addEventListener('submit', function(e) {
+            const recipientId = recipientSelect.value;
+            if (recipientId) {
+                // Set the form action with the selected recipient_id
+                messageForm.action = `/messaging/send/${recipientId}/`;
+            } else {
+                e.preventDefault();
+                alert('Veuillez sélectionner un destinataire.');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

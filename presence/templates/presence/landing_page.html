@@ -1,0 +1,21 @@
+{% extends 'presence/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">Bienvenue sur le Détecteur d'Absence</h1>
+            <p class="lead mb-5">Gérez facilement les présences et les absences de votre équipe</p>
+            
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                </a>
+                <a href="{% url 'presence:register' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-user-plus me-2"></i>S'inscrire
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

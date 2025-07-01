@@ -1,0 +1,180 @@
+{% extends 'presence/base.html' %}
+{% block content %}
+<h2>Bienvenue sur le détecteur d'absence</h2>
+{% if user.is_authenticated %}
+    <!-- Code existant pour les utilisateurs connectés - non modifié -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Bonjour, {{ user.employee.name|default:user.username }} !</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Rôle :</strong> 
+                        {% if user.employee.role == 'rh' %}RH
+                        {% elif user.employee.role == 'manager' %}Manager
+                        {% else %}Employé
+                        {% endif %}
+                    </p>
+                    <p><strong>Département :</strong> {{ user.employee.department }}</p>
+                    <p><strong>Statut actuel :</strong> {{ user.employee.status|capfirst }}</p>
+                    <hr>
+                    <div class="d-grid gap-2">
+                        {% if user.employee.role == 'employe' %}
+                            <a href="{% url 'presence:declare_absence' %}" class="btn btn-primary btn-sm">Déclarer une absence</a>
+                        {% elif user.employee.role == 'manager' %}
+                            <a href="{% url 'presence:team_dashboard' %}" class="btn btn-primary btn-sm">Voir tableau de bord équipe</a>
+                        {% elif user.employee.role == 'rh' %}
+                            <a href="{% url 'presence:rh_dashboard' %}" class="btn btn-primary btn-sm">Voir statistiques RH</a>
+                        {% endif %}
+                        <a href="{% url 'presence:inbox' %}" class="btn btn-secondary btn-sm">Boîte de réception</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            {% if user.employee.role == 'employe' %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Absences récentes</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if recent_absences %}
+                            <table class="table table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Justifié</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for absence in recent_absences %}
+                                    <tr>
+                                        <td>{{ absence.date }}</td>
+                                        <td>{{ absence.justified|yesno:"Oui,Non" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p class="p-3 mb-0">Aucune absence récente.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Messages récents</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_messages %}
+                        <ul class="list-group list-group-flush">
+                            {% for message in recent_messages %}
+                            <li class="list-group-item">
+                                <strong>{{ message.sender.employee.name|default:message.sender.username }}</strong> :
+                                {{ message.content|truncatechars:50 }}
+                                <br>
+                                <small class="text-muted">{{ message.sent_at|date:"d/m/Y H:i" }}</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="p-3 mb-0">Aucun message récent.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if user.employee.role == 'manager' %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Absences de l'équipe aujourd'hui</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if team_absences_today %}
+                            <table class="table table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Employé</th>
+                                        <th>Date</th>
+                                        <th>Justifié</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for absence in team_absences_today %}
+                                    <tr>
+                                        <td>{{ absence.employee.name }}</td>
+                                        <td>{{ absence.date }}</td>
+                                        <td>{{ absence.justified|yesno:"Oui,Non" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p class="p-3 mb-0">Aucune absence aujourd'hui dans l'équipe.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if user.employee.role == 'rh' %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Statistiques RH</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Total des absences enregistrées : <strong>{{ total_absences }}</strong></p>
+                        <a href="{% url 'presence:rh_dashboard' %}" class="btn btn-primary btn-sm">Voir plus</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <!-- Code amélioré pour les utilisateurs non connectés -->
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Accès au système de gestion des absences</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h4>Fonctionnalités</h4>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item"><i class="fas fa-user-check me-2"></i> Enregistrement des absences</li>
+                                    <li class="list-group-item"><i class="fas fa-calendar-alt me-2"></i> Suivi des présences</li>
+                                    <li class="list-group-item"><i class="fas fa-comments me-2"></i> Messagerie interne</li>
+                                    <li class="list-group-item"><i class="fas fa-chart-bar me-2"></i> Statistiques pour RH et managers</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="card-title">Connexion requise</h4>
+                                    <p class="card-text">Veuillez vous connecter pour accéder à votre tableau de bord personnalisé.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'presence:login' %}" class="btn btn-primary">Se connecter</a>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <h5><i class="fas fa-info-circle me-2"></i>À propos du système</h5>
+                                <p class="mb-0">Le détecteur d'absence est un outil interne permettant la gestion et le suivi des absences des employés. Selon votre rôle, vous aurez accès à différentes fonctionnalités adaptées à vos besoins.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center text-muted">
+                    <small>Pour toute assistance technique, contactez le support informatique</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'presence/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Tableau de bord employé</h2>
+    <p>Statut actuel: <span id="current-status">Présent</span></p>
+    
+    <div class="status-controls">
+        <button class="btn btn-primary" onclick="changeStatus('present')">Présent</button>
+        <button class="btn btn-warning" onclick="changeStatus('pause')">Pause</button>
+        <button class="btn btn-info" onclick="changeStatus('meeting')">En réunion</button>
+        <a href="{% url 'presence:declare_absence' %}" class="btn btn-danger">
+            <i class="fas fa-user-times"></i> Déclarer une absence
+        </a>
+    </div>
+    <script>
+        function changeStatus(newStatus) {
+            fetch("{% url 'presence:update_status' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({status: newStatus})
+            }).then(response => {
+                if(response.ok) {
+                    location.reload();
+                }
+            });
+        }
+        </script>
+    
+    <div class="activity-history">
+        <h3>Historique récent</h3>
+        <ul>
+            {% for log in logs %}
+            <li>{{ log.timestamp }} - {{ log.get_activity_type_display }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script src="{% static 'js/activity_tracker.js' %}"></script>
+{% endblock %}

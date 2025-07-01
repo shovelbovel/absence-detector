@@ -1,0 +1,147 @@
+{% extends 'presence/base.html' %}
+
+{% block title %}Envoyer un message{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        padding: 5px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Nouveau message</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'presence:send_message' %}">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.recipient.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-user me-2"></i>Destinataire
+                            </label>
+                            <select name="{{ form.recipient.name }}" 
+                                    id="{{ form.recipient.id_for_label }}" 
+                                    class="form-select select2" 
+                                    required>
+                                <option value="">Sélectionnez un destinataire...</option>
+                                {% for user in form.recipient.field.queryset %}
+                                    <option value="{{ user.id }}" 
+                                            {% if form.recipient.value == user.id %}selected{% endif %}>
+                                        {{ user.get_full_name|default:user.username }} - {{ user.employee.get_role_display }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.recipient.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.recipient.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.subject.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-tag me-2"></i>Objet
+                            </label>
+                            <input type="text" 
+                                   name="{{ form.subject.name }}" 
+                                   id="{{ form.subject.id_for_label }}" 
+                                   class="form-control form-control-lg" 
+                                   value="{{ form.subject.value|default:'' }}" 
+                                   required>
+                            {% if form.subject.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.subject.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.body.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-comment-alt me-2"></i>Message
+                            </label>
+                            <textarea name="{{ form.body.name }}" 
+                                     id="{{ form.body.id_for_label }}" 
+                                     class="form-control" 
+                                     rows="6" 
+                                     required>{{ form.body.value|default:'' }}</textarea>
+                            {% if form.body.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.body.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="{% url 'presence:inbox' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-paper-plane me-2"></i>Envoyer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    // Détruire toute instance existante de Select2 pour éviter les doublons
+    if ($.fn.select2) {
+        $('.select2').select2('destroy');
+    }
+    
+    // Initialiser Select2 avec recherche
+    $('.select2').select2({
+        theme: 'bootstrap-5',
+        placeholder: "Rechercher un destinataire...",
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('body'),
+        language: {
+            noResults: function() {
+                return "Aucun résultat trouvé";
+            },
+            searching: function() {
+                return "Recherche en cours...";
+            },
+            inputTooShort: function(args) {
+                return "Tapez au moins " + args.minimum + " caractères";
+            }
+        }
+    });
+    
+    // Ajouter des classes pour le style
+    $('.select2-container--default .select2-selection--single').addClass('form-control form-control-lg');
+});
+</script>
+{% endblock %}

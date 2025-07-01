@@ -1,0 +1,125 @@
+{% extends 'presence/base.html' %}
+{% block content %}
+<div class="analytics-dashboard">
+    <h2>Statistiques Globales</h2>
+    <div id="absence-trend-chart"></div>
+    <table class="table">
+        <thead>
+            <tr><th>Service</th><th>Taux d'Absence</th></tr>
+        </thead>
+        <tbody>
+            {% for dept in monthly_stats.by_department %}
+            <tr>
+                <td>{{ dept.employee__department }}</td>
+                <td>{{ dept.total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'presence:export_absences_csv' %}" class="btn btn-export">Exporter en CSV</a>
+</div>
+
+<div class="container mt-4">
+    <h2>Statistiques des présences</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <canvas id="presenceChart" width="400" height="300"></canvas>
+        </div>
+        <div class="col-md-6">
+            <canvas id="statusPie" width="400" height="300"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let presenceChart, statusChart;
+
+function updateCharts() {
+    fetch('{% url "presence:get_rh_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Données mises à jour:', data);
+            
+            // Mettre à jour le graphique des présences
+            if (presenceChart) {
+                presenceChart.data.labels = data.presence_data.labels;
+                presenceChart.data.datasets[0].data = data.presence_data.values;
+                presenceChart.update();
+            } else {
+                const ctx1 = document.getElementById('presenceChart').getContext('2d');
+                presenceChart = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: data.presence_data.labels,
+                        datasets: [{
+                            label: 'Présences par jour',
+                            data: data.presence_data.values,
+                            backgroundColor: '#1a73e8'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Mettre à jour le graphique des statuts
+            if (statusChart) {
+                statusChart.data.labels = data.status_data.labels;
+                statusChart.data.datasets[0].data = data.status_data.values;
+                statusChart.update();
+            } else {
+                const ctx2 = document.getElementById('statusPie').getContext('2d');
+                statusChart = new Chart(ctx2, {
+                    type: 'pie',
+                    data: {
+                        labels: data.status_data.labels,
+                        datasets: [{
+                            data: data.status_data.values,
+                            backgroundColor: ['#1a73e8', '#ffc107', '#17a2b8', '#dc3545', '#28a745', '#6c757d']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Répartition des statuts'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Mettre à jour l'horodatage
+            const lastUpdated = document.getElementById('last-updated');
+            if (lastUpdated) {
+                lastUpdated.textContent = `Dernière mise à jour: ${data.last_updated}`;
+            }
+        })
+        .catch(error => console.error('Erreur lors de la mise à jour des données:', error));
+}
+
+// Initialiser les graphiques au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    updateCharts();
+    // Mettre à jour les données toutes les 30 secondes
+    setInterval(updateCharts, 30000);
+});
+</script>
+
+<div class="mt-3 text-muted small" id="last-updated">Chargement des données...</div>
+{% endblock %}
