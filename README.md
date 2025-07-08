@@ -174,13 +174,7 @@ python manage.py test
 
 For production deployment:
 1. Set `DEBUG = False` in settings.py
-2. Configure production database
-3. Set up static file serving
-4. Configure web server (Apache/Nginx)
-
-## Screenshots
-
-*Add screenshots of your application here*
+2. Configure production 
 
 ## License
 
@@ -195,7 +189,6 @@ This project is developed in an academic context for the 2024-2025 academic year
 ## Contact
 
 - **IKTACHE CHOUAIB** - [email@example.com]
-- **ZAKI RIM** - [email@example.com]
 
 ## Project Status
 
